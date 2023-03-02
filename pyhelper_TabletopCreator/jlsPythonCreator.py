@@ -15,6 +15,7 @@ mode = "generate_csv"
 import glob
 import pprint
 import json
+import csv
 import math
 import datetime
 
@@ -93,3 +94,8 @@ for _, set_dict in sets_json_load.items():
         my_set["name"] = set_dict["name"]
         my_set["fields_and_samples"] = []
         my_set["fields_and_samples"] = get_csv_fields_and_samples(set_dict["items"])
+
+csv_filename = f"pyhelper_TabletopCreator/{my_set['name']}_set_from_json_{get_current_timestamp()}.csv"
+with open(csv_filename, "w") as csv_file:
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerows(my_set["fields_and_samples"])
