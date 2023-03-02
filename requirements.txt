@@ -1,0 +1,12 @@
+# If starting (and testing) a new environment this fiile will be overwritten by the frozen requirements file.
+# Jason Secrest
+# 2022-12-29
+numpy
+scipy
+pandas
+scikit-learn
+matplotlib
+seaborn
+jupyter
+jupyter-book
+bokeh
