@@ -93,5 +93,4 @@ for _, set_dict in sets_json_load.items():
         my_set["name"] = set_dict["name"]
         my_set["fields_and_samples"] = []
         my_set["fields_and_samples"] = get_csv_fields_and_samples(set_dict["items"])
-
-csv_writer = csv.writer("my_set")
+        pprint.pprint(my_set)
