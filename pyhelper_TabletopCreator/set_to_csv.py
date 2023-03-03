@@ -97,7 +97,9 @@ for _, set_dict in sets_json_load.items():
         my_set["fields_and_samples"] = get_csv_fields_and_samples(set_dict["items"])
 
         # prep to write csv
-        csv_filename = f"pyhelper_TabletopCreator/{my_set['name']} - set_from_json_{get_current_timestamp()}.csv"
+        csv_outfolder = "pyhelper_TabletopCreator/generated_set_CSVs/"
+        csv_filename = f"{my_set['name']} - set_from_json_{get_current_timestamp()}.csv"
+        csv_outpath = csv_outfolder + csv_filename
         csv_columns = list(my_set["fields_and_samples"][0].keys())
         csv_samplerow = list(my_set["fields_and_samples"][0].values())
         # make title the first column
@@ -109,7 +111,7 @@ for _, set_dict in sets_json_load.items():
         csv_samplerow.insert(0, csv_samplerow.pop(title_index))
         csv_samplerow.insert(0, my_set["name"])
 
-        with open(csv_filename, "w") as csv_file:
+        with open(csv_outpath, "w") as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerows([csv_columns, csv_samplerow])
         print(f"File written: {csv_filename}")
