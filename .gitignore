@@ -6,6 +6,7 @@ output/
 temp/
 *.tcp
 pyhelper_TabletopCreator/*.csv
+pyhelper_TabletopCreator/generated_set_CSVs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
