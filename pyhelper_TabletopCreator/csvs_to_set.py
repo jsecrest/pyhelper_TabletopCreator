@@ -54,7 +54,7 @@ class calculated_field:
         return None
 
 
-def test_calculated_field():
+def convert_inrows_to_outrows(input_row_list):
     calculated_field_list = [
         calculated_field(
             "repeat_text_num_times_test",
@@ -73,15 +73,8 @@ def test_calculated_field():
         ),  # match_nothing
     ]
 
-    test_input = [
-        ["cube_num_i_match", "not_a_match", "mana_txt_i_match", "target_txt_i_match"],
-        [1, 3, "fire", "all"],
-        [0, 1, "ice", "single"],
-        [5, "never_seen", "tbd", "tbd"],
-        ["5", 4, "lightning", 2],
-    ]
     column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
-    headers = test_input.pop(0)
+    headers = input_row_list.pop(0)
     for col_name in headers:
         matching_fields_bools: list[bool] = []
         matching_fields_results: list[re.Match[str] | None] = []
@@ -107,7 +100,7 @@ def test_calculated_field():
     output_values = [headers]
     print(column_match_list)
     row_i = 0
-    for row in test_input:
+    for row in input_row_list:
         cell_i = 0
         new_row: list[str | None] = []
         for cell in row:
@@ -126,7 +119,7 @@ def test_calculated_field():
             cell_i += 1
         row_i += 1
         output_values.append(new_row)
-    pprint.pprint(output_values)
+    return output_values
 
 
 # don't commit yet...
@@ -155,4 +148,18 @@ def test_calculated_field():
 #         pass
 
 if __name__ == "__main__":
-    test_calculated_field()
+    out_row_list = convert_inrows_to_outrows(
+        input_row_list=[
+            [
+                "cube_num_i_match",
+                "not_a_match",
+                "mana_txt_i_match",
+                "target_txt_i_match",
+            ],
+            [1, 3, "fire", "all"],
+            [0, 1, "ice", "single"],
+            [5, "never_seen", "tbd", "tbd"],
+            ["5", 4, "lightning", 2],
+        ]
+    )
+    pprint.pprint(out_row_list)
