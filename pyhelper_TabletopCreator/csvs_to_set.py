@@ -54,25 +54,9 @@ class calculated_field:
         return None
 
 
-def convert_inrows_to_outrows(input_row_list):
-    calculated_field_list = [
-        calculated_field(
-            "repeat_text_num_times_test",
-            r"(\w*)_num_i_match",
-            lambda cell_n, col_text: int(cell_n) * ("{" + str(col_text) + "}"),
-        ),  # repeat_text_from_col_as_TC_var
-        calculated_field(
-            "append_text_to_cell_test",
-            r"(\w*)_txt_i_match",
-            lambda cell_text, col_text: str(cell_text) + "_" + str(col_text),
-        ),  # modify_text_from_col
-        calculated_field(
-            "do_not_use_test",
-            r"i_won't_be_there",
-            lambda t: "oops! this shouldn't have worked!",
-        ),  # match_nothing
-    ]
-
+def convert_inrows_to_outrows(
+    input_row_list: list[list[str | int]], calculated_field_list: list[calculated_field]
+):
     column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
     headers = input_row_list.pop(0)
     for col_name in headers:
@@ -148,18 +132,34 @@ def convert_inrows_to_outrows(input_row_list):
 #         pass
 
 if __name__ == "__main__":
-    out_row_list = convert_inrows_to_outrows(
-        input_row_list=[
-            [
-                "cube_num_i_match",
-                "not_a_match",
-                "mana_txt_i_match",
-                "target_txt_i_match",
-            ],
-            [1, 3, "fire", "all"],
-            [0, 1, "ice", "single"],
-            [5, "never_seen", "tbd", "tbd"],
-            ["5", 4, "lightning", 2],
-        ]
-    )
+    calculated_field_list = [
+        calculated_field(
+            "repeat_text_num_times_test",
+            r"(\w*)_num_i_match",
+            lambda cell_n, col_text: int(cell_n) * ("{" + str(col_text) + "}"),
+        ),  # repeat_text_from_col_as_TC_var
+        calculated_field(
+            "append_text_to_cell_test",
+            r"(\w*)_txt_i_match",
+            lambda cell_text, col_text: str(cell_text) + "_" + str(col_text),
+        ),  # modify_text_from_col
+        calculated_field(
+            "do_not_use_test",
+            r"i_won't_be_there",
+            lambda t: "oops! this shouldn't have worked!",
+        ),  # match_nothing
+    ]
+    input_row_list = [
+        [
+            "cube_num_i_match",
+            "not_a_match",
+            "mana_txt_i_match",
+            "target_txt_i_match",
+        ],
+        [1, 3, "fire", "all"],
+        [0, 1, "ice", "single"],
+        [5, "never_seen", "tbd", "tbd"],
+        ["5", 4, "lightning", 2],
+    ]
+    out_row_list = convert_inrows_to_outrows(input_row_list, calculated_field_list)
     pprint.pprint(out_row_list)
