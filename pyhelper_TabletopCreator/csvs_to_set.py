@@ -54,12 +54,35 @@ class calculated_field:
         return None
 
 
+def print_if_verbose(
+    verbosity, trigger_threshold, print_value, use_pprint=False, pp_header=None
+):
+    """Prints statement if verbosity meets or exceeds the trigger threshold."""
+    if trigger_threshold <= verbosity:
+        if use_pprint:
+            print(f"\n< V{trigger_threshold} start pprint: {pp_header}>")
+            pprint.pprint(print_value)
+            print(f"< V{trigger_threshold} end pprint>\n")
+        else:
+            print_value = (
+                f"> V{trigger_threshold} >"
+                + "  " * trigger_threshold
+                + str(print_value)
+            )
+            print(print_value)
+
+
 def convert_inrows_to_outrows(
     input_row_list: list[list[str | int | None]],
     calculated_field_list: list[calculated_field],
+    verbosity=4,
 ):
-    column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
     headers = input_row_list.pop(0)
+    output_values = [headers]
+    column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
+    print_if_verbose(
+        verbosity, 1, "Checking column names against caculated field patterns..."
+    )
     for col_name in headers:
         matching_fields_bools: list[bool] = []
         matching_fields_results: list[re.Match[str] | None] = []
@@ -83,26 +106,36 @@ def convert_inrows_to_outrows(
                 match_result = (None, None)
             finally:
                 column_match_list.append(match_result)
-                print(match_result)
-    output_values = [headers]
-    print(column_match_list)
+                print_if_verbose(verbosity, 2, f"\t{match_result}")
+    print_if_verbose(verbosity, 1, "Column names have been checked.")
+    print_if_verbose(
+        verbosity,
+        2,
+        column_match_list,
+        use_pprint=True,
+        pp_header="Column conversion list:",
+    )
     row_i = 0
     for row in input_row_list:
         cell_i = 0
         new_row: list[str | int | None] = []
+        print_if_verbose(verbosity, 3, f"ROW {row_i} started.")
         for cell in row:
-            print(f"CELL STARTED: {row_i},{cell_i}")
-            print(column_match_list[cell_i])
+            print_if_verbose(verbosity, 4, f"CELL started: {row_i},{cell_i}")
+            print_if_verbose(verbosity, 4, f"- {column_match_list[cell_i]}")
             cf_index, re_match = column_match_list[cell_i]
             if isinstance(cf_index, int) and re_match:
                 args = re_match.groups()
-                print(
-                    f"row{row_i}, cell{cell_i} applying {calculated_field_list[cf_index].name}.convert({cell},{args})"
+                print_if_verbose(
+                    verbosity,
+                    4,
+                    f"- applying {calculated_field_list[cf_index].name}.convert({cell},{args})",
                 )
                 new_row.append(calculated_field_list[cf_index].convert(cell, args))
             else:
+                if verbosity:
+                    print_if_verbose(verbosity, 4, "original value maintained: {cell}")
                 new_row.append(cell)
-            print(f"CELL COMPLETED: {row_i},{cell_i}")
             cell_i += 1
         row_i += 1
         output_values.append(new_row)
