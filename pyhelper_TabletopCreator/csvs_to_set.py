@@ -35,36 +35,34 @@ class calculated_field:
         self.re_pattern_str = re_pattern_str
         self.convert_func: Callable = convert_func
 
-    def check_pattern(self, column_name: str) -> tuple[bool, re.Match[str] | None]:
+    def check_pattern(self, column_name: str) -> re.Match[str] | None:
         """Return a tuple: (True, re.Match) if the column name matches the re pattern. (False,None) otherwise."""
         re_result = re.search(self.re_pattern_str, column_name)
         if re_result:
-            return (True, re_result)
-        return (False, None)
+            return re_result
+        return None
 
-    def convert(self, cell_value, re_result: re.Match[str]) -> str | None:
+    def convert(self, cell_value, arg_list: tuple) -> str | None:
         """Call the conversion function supplied when this class was initiated"""
-        if re_result:
-            args = re_result.groups()
-            out_str = self.convert_func(cell_value, *args)
-            if isinstance(out_str, str):
-                return out_str
-            else:
-                raise TypeError(
-                    "convert_func passed to calculated_field must return type str."
-                )
+        out_str = self.convert_func(cell_value, *arg_list)
+        if isinstance(out_str, str):
+            return out_str
+        else:
+            raise TypeError(
+                "convert_func passed to calculated_field must return type str."
+            )
         return None
 
 
 def test_calculated_field():
     calculated_field_list = [
         calculated_field(
-            "repeat_text_test",
+            "repeat_text_num_times_test",
             r"(\w*)_num_i_match",
             lambda cell_n, col_text: int(cell_n) * ("{" + str(col_text) + "}"),
         ),  # repeat_text_from_col_as_TC_var
         calculated_field(
-            "modify_text_test",
+            "append_text_to_cell_test",
             r"(\w*)_txt_i_match",
             lambda cell_text, col_text: str(cell_text) + "_" + str(col_text),
         ),  # modify_text_from_col
@@ -85,12 +83,11 @@ def test_calculated_field():
     column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
     headers = test_input.pop(0)
     for col_name in headers:
-        matching_fields_bools = []
-        matching_fields_results = []
+        matching_fields_bools: list[bool] = []
+        matching_fields_results: list[re.Match[str] | None] = []
         for calc_field in calculated_field_list:
-            col_is_match, col_result = calc_field.check_pattern(col_name)
-            matching_fields_bools.append(col_is_match)
-            matching_fields_results.append(col_result)
+            matching_fields_bools.append(calc_field.check_pattern(col_name) is not None)
+            matching_fields_results.append(calc_field.check_pattern(col_name))
         if sum(matching_fields_bools) > 1:
             raise Warning(
                 "There are multiple calculated field matches for this "
@@ -98,6 +95,7 @@ def test_calculated_field():
                 + f"{col_name} : {matching_fields_bools}"
             )
         else:
+            match_result: tuple[int | None, re.Match[str] | None]
             try:
                 cf_index = matching_fields_bools.index(True)
                 match_result = (cf_index, matching_fields_results[cf_index])
@@ -113,13 +111,15 @@ def test_calculated_field():
         cell_i = 0
         new_row: list[str | None] = []
         for cell in row:
+            print(f"CELL STARTED: {row_i},{cell_i}")
             print(column_match_list[cell_i])
             cf_index, re_match = column_match_list[cell_i]
-            if cf_index and re_match:
+            if isinstance(cf_index, int) and re_match:
+                args = re_match.groups()
                 print(
-                    f"row{row_i}, cell{cell_i} applying {calculated_field_list[cf_index].name}.convert({cell},{re_match.groups()})"
+                    f"row{row_i}, cell{cell_i} applying {calculated_field_list[cf_index].name}.convert({cell},{args})"
                 )
-                new_row.append(calculated_field_list[cf_index].convert(cell, re_match))
+                new_row.append(calculated_field_list[cf_index].convert(cell, args))
             else:
                 new_row.append(cell)
             print(f"CELL COMPLETED: {row_i},{cell_i}")
