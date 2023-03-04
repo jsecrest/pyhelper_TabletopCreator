@@ -55,7 +55,8 @@ class calculated_field:
 
 
 def convert_inrows_to_outrows(
-    input_row_list: list[list[str | int]], calculated_field_list: list[calculated_field]
+    input_row_list: list[list[str | int | None]],
+    calculated_field_list: list[calculated_field],
 ):
     column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
     headers = input_row_list.pop(0)
@@ -63,8 +64,10 @@ def convert_inrows_to_outrows(
         matching_fields_bools: list[bool] = []
         matching_fields_results: list[re.Match[str] | None] = []
         for calc_field in calculated_field_list:
-            matching_fields_bools.append(calc_field.check_pattern(col_name) is not None)
-            matching_fields_results.append(calc_field.check_pattern(col_name))
+            matching_fields_bools.append(
+                calc_field.check_pattern(str(col_name)) is not None
+            )
+            matching_fields_results.append(calc_field.check_pattern(str(col_name)))
         if sum(matching_fields_bools) > 1:
             raise Warning(
                 "There are multiple calculated field matches for this "
@@ -86,7 +89,7 @@ def convert_inrows_to_outrows(
     row_i = 0
     for row in input_row_list:
         cell_i = 0
-        new_row: list[str | None] = []
+        new_row: list[str | int | None] = []
         for cell in row:
             print(f"CELL STARTED: {row_i},{cell_i}")
             print(column_match_list[cell_i])
