@@ -1,0 +1,2 @@
+setname,title,amount,kickstart_type,secondary_type,logo,rules_cast,rules_ongoing,primary_type,tertiary_type,kickstart_cubes,primary_cubes,secondary_cubes,tertiary_cubes,border
+Spell Test,template,1,pure,earth,midjourney/temp/cartoon_alchemy_9x14.png,do a thing,do forever,ice,lightning,1,2,3,4,#75E67DFF
