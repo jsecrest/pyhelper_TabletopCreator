@@ -24,28 +24,28 @@ class calculated_field:
     (See row_parser class)
     """
 
-    def __init__(self, re_pattern_str: str, convert_func: Callable) -> None:
+    def __init__(self, name, re_pattern_str: str, convert_func: Callable) -> None:
         """
         re_pattern_str : string to be used as a regex pattern
         convert_func : a callable function that returns a string.
         - First argument should be cell_value.
         - All remaining arguments are captured groups from the csv column name
         """
+        self.name = name
         self.re_pattern_str = re_pattern_str
         self.convert_func: Callable = convert_func
-        self.re_result: re.Match[str] | None = None
 
-    def is_definition_match(self, column_name: str) -> bool:
-        """Return true if the column name matches the re pattern. False otherwise."""
-        self.re_result = re.search(self.re_pattern_str, column_name)
-        if self.re_result:
-            return True
-        return False
+    def check_pattern(self, column_name: str) -> tuple[bool, re.Match[str] | None]:
+        """Return a tuple: (True, re.Match) if the column name matches the re pattern. (False,None) otherwise."""
+        re_result = re.search(self.re_pattern_str, column_name)
+        if re_result:
+            return (True, re_result)
+        return (False, None)
 
-    def convert(self, cell_value) -> str | None:
+    def convert(self, cell_value, re_result: re.Match[str]) -> str | None:
         """Call the conversion function supplied when this class was initiated"""
-        if self.re_result:
-            args = self.re_result.groups()
+        if re_result:
+            args = re_result.groups()
             out_str = self.convert_func(cell_value, *args)
             if isinstance(out_str, str):
                 return out_str
@@ -59,13 +59,19 @@ class calculated_field:
 def test_calculated_field():
     calculated_field_list = [
         calculated_field(
-            r"(\w*)_num_i_match", lambda n, x: int(n) * ("{" + x + "}")
+            "repeat_text_test",
+            r"(\w*)_num_i_match",
+            lambda cell_n, col_text: int(cell_n) * ("{" + str(col_text) + "}"),
         ),  # repeat_text_from_col_as_TC_var
         calculated_field(
-            r"(\w*)_txt_i_match", lambda t, x: t + "_" + x
+            "modify_text_test",
+            r"(\w*)_txt_i_match",
+            lambda cell_text, col_text: str(cell_text) + "_" + str(col_text),
         ),  # modify_text_from_col
         calculated_field(
-            r"i_won't_be_there", lambda t: "oops! this shouldn't have worked!"
+            "do_not_use_test",
+            r"i_won't_be_there",
+            lambda t: "oops! this shouldn't have worked!",
         ),  # match_nothing
     ]
 
@@ -76,35 +82,49 @@ def test_calculated_field():
         [5, "never_seen", "tbd", "tbd"],
         ["5", 4, "lightning", 2],
     ]
-    column_match_list: list[tuple[bool, int]] = []
+    column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
     headers = test_input.pop(0)
     for col_name in headers:
+        matching_fields_bools = []
+        matching_fields_results = []
         for calc_field in calculated_field_list:
-            matching_fields = []
-            matching_fields.append(calc_field.is_definition_match(col_name))
-            if sum(matching_fields) > 1:
-                raise Warning(
-                    "There are multiple calculated field matches for this "
-                    + "column name. Only one is allowed. "
-                    + f"{col_name} : {matching_fields}"
-                )
-            else:
-                try:
-                    definition_index = matching_fields.index(True)
-                    match_result = (True, definition_index)
-                except:
-                    match_result = (False, -1)
-                finally:
-                    column_match_list.append(match_result)
+            col_is_match, col_result = calc_field.check_pattern(col_name)
+            matching_fields_bools.append(col_is_match)
+            matching_fields_results.append(col_result)
+        if sum(matching_fields_bools) > 1:
+            raise Warning(
+                "There are multiple calculated field matches for this "
+                + "column name. Only one is allowed. "
+                + f"{col_name} : {matching_fields_bools}"
+            )
+        else:
+            try:
+                cf_index = matching_fields_bools.index(True)
+                match_result = (cf_index, matching_fields_results[cf_index])
+            except:
+                match_result = (None, None)
+            finally:
+                column_match_list.append(match_result)
+                print(match_result)
     output_values = [headers]
+    print(column_match_list)
+    row_i = 0
     for row in test_input:
-        i = 0
+        cell_i = 0
         new_row: list[str | None] = []
         for cell in row:
-            if column_match_list[i][0]:
-                new_row.append(
-                    calculated_field_list[column_match_list[i][1]].convert(cell)
+            print(column_match_list[cell_i])
+            cf_index, re_match = column_match_list[cell_i]
+            if cf_index and re_match:
+                print(
+                    f"row{row_i}, cell{cell_i} applying {calculated_field_list[cf_index].name}.convert({cell},{re_match.groups()})"
                 )
+                new_row.append(calculated_field_list[cf_index].convert(cell, re_match))
+            else:
+                new_row.append(cell)
+            print(f"CELL COMPLETED: {row_i},{cell_i}")
+            cell_i += 1
+        row_i += 1
         output_values.append(new_row)
     pprint.pprint(output_values)
 
@@ -135,5 +155,4 @@ def test_calculated_field():
 #         pass
 
 if __name__ == "__main__":
-    # TODO: FIND OUT WHY BROKE :(
     test_calculated_field()
