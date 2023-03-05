@@ -42,7 +42,7 @@ class calculated_field:
             return re_result
         return None
 
-    def convert(self, cell_value, arg_list: tuple) -> str | None:
+    def convert(self, cell_value, arg_list: tuple[str, ...]) -> str | None:
         """Call the conversion function supplied when this class was initiated"""
         out_str = self.convert_func(cell_value, *arg_list)
         if isinstance(out_str, str):
@@ -79,18 +79,22 @@ def convert_inrows_to_outrows(
 ):
     headers = input_row_list.pop(0)
     output_values = [headers]
-    column_match_list: list[tuple[int | None, re.Match[str] | None]] = []
+    column_match_list: list[tuple[int | None, tuple[str, ...] | None]] = []
     print_if_verbose(
         verbosity, 1, "Checking column names against caculated field patterns..."
     )
     for col_name in headers:
         matching_fields_bools: list[bool] = []
-        matching_fields_results: list[re.Match[str] | None] = []
+        matching_fields_results: list[tuple[str, ...] | None] = []
         for calc_field in calculated_field_list:
             matching_fields_bools.append(
                 calc_field.check_pattern(str(col_name)) is not None
             )
-            matching_fields_results.append(calc_field.check_pattern(str(col_name)))
+            match = calc_field.check_pattern(str(col_name))
+            if match:
+                matching_fields_results.append(match.groups())
+            else:
+                matching_fields_results.append(None)
         if sum(matching_fields_bools) > 1:
             raise Warning(
                 "There are multiple calculated field matches for this "
@@ -98,7 +102,7 @@ def convert_inrows_to_outrows(
                 + f"{col_name} : {matching_fields_bools}"
             )
         else:
-            match_result: tuple[int | None, re.Match[str] | None]
+            match_result: tuple[int | None, tuple[str, ...] | None]
             try:
                 cf_index = matching_fields_bools.index(True)
                 match_result = (cf_index, matching_fields_results[cf_index])
@@ -123,9 +127,8 @@ def convert_inrows_to_outrows(
         for cell in row:
             print_if_verbose(verbosity, 4, f"CELL started: {row_i},{cell_i}")
             print_if_verbose(verbosity, 4, f"- {column_match_list[cell_i]}")
-            cf_index, re_match = column_match_list[cell_i]
-            if isinstance(cf_index, int) and re_match:
-                args = re_match.groups()
+            cf_index, args = column_match_list[cell_i]
+            if isinstance(cf_index, int) and args:
                 print_if_verbose(
                     verbosity,
                     4,
